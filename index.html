@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon GO Analyzer | IV Stats, PvP Rankings & Candy Calculator</title>
+    <meta name="description" content="Upload a Pokémon GO screenshot to get instant IV stats, PvP rankings, level detection, and candy cost breakdown.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background Particles -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Header -->
+    <header id="app-header">
+        <div class="header-content">
+            <div class="logo-group">
+                <div class="pokeball-logo">
+                    <div class="pokeball-top"></div>
+                    <div class="pokeball-center"><div class="pokeball-button"></div></div>
+                    <div class="pokeball-bottom"></div>
+                </div>
+                <div class="title-group">
+                    <h1>Pokémon GO <span class="accent">Analyzer</span></h1>
+                    <p class="subtitle">Upload a screenshot · Get instant stats, rankings &amp; candy roadmap</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-main">
+        <!-- Upload Section -->
+        <section id="upload-section" class="glass-card">
+            <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Upload screenshot">
+                <div class="drop-zone-content">
+                    <div class="upload-icon-wrapper">
+                        <svg class="upload-icon" viewBox="0 0 64 64" fill="none">
+                            <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4" opacity="0.4"/>
+                            <path d="M32 20v24M20 32l12-12 12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="drop-text">Drop your Pokémon GO screenshot here</p>
+                    <p class="drop-subtext">or click to browse · PNG, JPG supported</p>
+                </div>
+                <div id="preview-container" class="preview-container hidden">
+                    <img id="preview-image" alt="Uploaded screenshot preview">
+                    <button id="remove-image" class="remove-btn" aria-label="Remove image" title="Remove image">✕</button>
+                </div>
+                <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp" hidden>
+            </div>
+
+            <div class="action-row">
+                <button id="analyze-btn" class="btn btn-primary" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    Analyze Screenshot
+                </button>
+                <button id="reset-btn" class="btn btn-secondary hidden">Reset</button>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <section id="loading-section" class="hidden">
+            <div class="loader-card glass-card">
+                <div class="pokeball-spinner">
+                    <div class="spinner-ball">
+                        <div class="spinner-top"></div>
+                        <div class="spinner-line"></div>
+                        <div class="spinner-bottom"></div>
+                    </div>
+                </div>
+                <p class="loader-text">Analyzing your Pokémon...</p>
+                <div class="loader-bar"><div class="loader-fill"></div></div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="hidden">
+            <!-- Pokemon Identity Card -->
+            <div id="pokemon-identity" class="result-card glass-card">
+                <div class="card-header">
+                    <div class="card-icon">🔍</div>
+                    <h2>Pokémon Identified</h2>
+                </div>
+                <div class="identity-content">
+                    <div class="pokemon-sprite-wrapper">
+                        <img id="pokemon-sprite" alt="Pokemon sprite" class="pokemon-sprite">
+                    </div>
+                    <div class="pokemon-info">
+                        <h3 id="pokemon-name" class="pokemon-name">—</h3>
+                        <div id="pokemon-types" class="type-badges"></div>
+                        <div class="stat-row">
+                            <span class="stat-label">CP</span>
+                            <span id="pokemon-cp" class="stat-value cp-value">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IV Stats Card -->
+            <div id="iv-stats-card" class="result-card glass-card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <h2>IV Stats</h2>
+                    <div id="iv-percentage" class="iv-badge">—%</div>
+                </div>
+                <div class="iv-content">
+                    <div class="iv-bars">
+                        <div class="iv-bar-group">
+                            <div class="iv-bar-label">
+                                <span class="iv-stat-name">⚔️ Attack</span>
+                                <span id="iv-attack-value" class="iv-stat-value">—</span>
+                            </div>
+                            <div class="iv-bar-track">
+                                <div class="iv-sub-bars" id="attack-sub-bars"></div>
+                            </div>
+                        </div>
+                        <div class="iv-bar-group">
+                            <div class="iv-bar-label">
+                                <span class="iv-stat-name">🛡️ Defense</span>
+                                <span id="iv-defense-value" class="iv-stat-value">—</span>
+                            </div>
+                            <div class="iv-bar-track">
+                                <div class="iv-sub-bars" id="defense-sub-bars"></div>
+                            </div>
+                        </div>
+                        <div class="iv-bar-group">
+                            <div class="iv-bar-label">
+                                <span class="iv-stat-name">❤️ HP</span>
+                                <span id="iv-hp-value" class="iv-stat-value">—</span>
+                            </div>
+                            <div class="iv-bar-track">
+                                <div class="iv-sub-bars" id="hp-sub-bars"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="iv-summary">
+                        <div class="iv-total">
+                            <span>Total IV</span>
+                            <span id="iv-total-value">— / 45</span>
+                        </div>
+                        <div id="iv-appraisal" class="iv-appraisal"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level Card -->
+            <div id="level-card" class="result-card glass-card">
+                <div class="card-header">
+                    <div class="card-icon">📐</div>
+                    <h2>Pokémon Level</h2>
+                </div>
+                <div class="level-content">
+                    <div class="level-arc-wrapper">
+                        <svg id="level-arc-svg" viewBox="0 0 200 110" class="level-arc-svg">
+                            <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+                            <path id="level-arc-fill" d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="url(#arcGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 283"/>
+                            <circle id="level-arc-dot" cx="10" cy="100" r="6" fill="#fff" filter="url(#glow)"/>
+                            <defs>
+                                <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#00d4ff"/>
+                                    <stop offset="50%" stop-color="#7c4dff"/>
+                                    <stop offset="100%" stop-color="#ff4081"/>
+                                </linearGradient>
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="2" result="blur"/>
+                                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                </filter>
+                            </defs>
+                        </svg>
+                        <div class="level-display">
+                            <span class="level-label">Level</span>
+                            <span id="level-value" class="level-number">—</span>
+                            <span id="level-max" class="level-max">/ 50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PvP Rankings Card -->
+            <div id="pvp-card" class="result-card glass-card">
+                <div class="card-header">
+                    <div class="card-icon">🏆</div>
+                    <h2>PvP Rankings & Meta</h2>
+                </div>
+                <div class="pvp-content">
+                    <!-- Type Ranking -->
+                    <div class="pvp-section">
+                        <h3 class="pvp-section-title">Type Ranking</h3>
+                        <div id="type-ranking" class="type-ranking-content"></div>
+                    </div>
+                    <!-- League Rankings -->
+                    <div class="pvp-section">
+                        <h3 class="pvp-section-title">League Rankings</h3>
+                        <div id="league-rankings" class="league-grid"></div>
+                    </div>
+                    <!-- Best Moveset -->
+                    <div class="pvp-section">
+                        <h3 class="pvp-section-title">Recommended Moveset</h3>
+                        <div id="best-moveset" class="moveset-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candy Cost Card -->
+            <div id="candy-card" class="result-card glass-card">
+                <div class="card-header">
+                    <div class="card-icon">🍬</div>
+                    <h2>Candy & Power-Up Cost</h2>
+                </div>
+                <div class="candy-content">
+                    <div class="candy-summary">
+                        <div class="candy-stat">
+                            <span class="candy-icon regular">🍬</span>
+                            <div>
+                                <span id="total-candy" class="candy-number">—</span>
+                                <span class="candy-label">Candy needed</span>
+                            </div>
+                        </div>
+                        <div class="candy-stat">
+                            <span class="candy-icon xl">🍬</span>
+                            <div>
+                                <span id="total-xl-candy" class="candy-number">—</span>
+                                <span class="candy-label">XL Candy needed</span>
+                            </div>
+                        </div>
+                        <div class="candy-stat">
+                            <span class="candy-icon stardust">⭐</span>
+                            <div>
+                                <span id="total-stardust" class="candy-number">—</span>
+                                <span class="candy-label">Stardust needed</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="candy-table-wrapper">
+                        <table id="candy-table" class="candy-table">
+                            <thead>
+                                <tr>
+                                    <th>Level</th>
+                                    <th>Candy</th>
+                                    <th>XL Candy</th>
+                                    <th>Stardust</th>
+                                    <th>Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candy-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manual Input Fallback -->
+        <section id="manual-section" class="hidden">
+            <div class="glass-card manual-card">
+                <div class="card-header">
+                    <div class="card-icon">✏️</div>
+                    <h2>Manual Input</h2>
+                </div>
+                <p class="manual-hint">Can't read the screenshot? Enter the details manually.</p>
+                <div class="manual-grid">
+                    <div class="input-group">
+                        <label for="manual-pokemon">Pokémon Name</label>
+                        <input type="text" id="manual-pokemon" placeholder="e.g. Latias" list="pokemon-list" autocomplete="off">
+                        <datalist id="pokemon-list"></datalist>
+                    </div>
+                    <div class="input-group">
+                        <label for="manual-cp">CP</label>
+                        <input type="number" id="manual-cp" placeholder="e.g. 1905" min="10" max="9999">
+                    </div>
+                    <div class="input-group">
+                        <label for="manual-attack">Attack IV (0-15)</label>
+                        <input type="number" id="manual-attack" placeholder="0-15" min="0" max="15">
+                    </div>
+                    <div class="input-group">
+                        <label for="manual-defense">Defense IV (0-15)</label>
+                        <input type="number" id="manual-defense" placeholder="0-15" min="0" max="15">
+                    </div>
+                    <div class="input-group">
+                        <label for="manual-hp">HP IV (0-15)</label>
+                        <input type="number" id="manual-hp" placeholder="0-15" min="0" max="15">
+                    </div>
+                    <div class="input-group">
+                        <label for="manual-level">Level (1-50)</label>
+                        <input type="number" id="manual-level" placeholder="e.g. 25" min="1" max="50" step="0.5">
+                    </div>
+                </div>
+                <button id="manual-analyze-btn" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/></svg>
+                    Analyze
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer id="app-footer">
+        <p>Analysis powered by local Pokémon data · Rankings reference <a href="https://pvpoke.com/" target="_blank" rel="noopener">PvPoke.com</a> &amp; <a href="https://db.pokemongohub.net/" target="_blank" rel="noopener">Pokémon GO Hub</a> data · Results may vary with game updates</p>
+    </footer>
+
+    <script src="pokemon-data.js"></script>
+    <script src="candy-costs.js"></script>
+    <script src="pvp-data.js"></script>
+    <!-- OCR for CP / Pokémon name (optional; requires internet to load CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="analyzer.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
